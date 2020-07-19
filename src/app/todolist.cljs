@@ -1,11 +1,12 @@
 (ns app.todolist
   (:require [reagent.core :as r]
-            [reagent.dom :as rdom]
             [clojure.string :as str]))
 
 (defonce todos (r/atom (sorted-map)))
 
 (defonce counter (r/atom 0))
+
+(defn delete [id] (swap! todos dissoc id))
 
 (defn add-todo [text]
   (let [id (swap! counter inc)]
@@ -34,7 +35,8 @@
       [:li {:class (str (if done "completed ")
                         (if @editing "editing"))}
        [:div.view
-        [:label {:on-double-click #(reset! editing true)} title]]])))
+        [:label {:on-double-click #(reset! editing true)} title]
+        [:button.destroy {:on-click #(delete id)}]]])))
 
 (defn todolist [props]
   (js/console.log "props" props)
