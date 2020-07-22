@@ -10,6 +10,8 @@
 (defn save [id title] (swap! todos assoc-in [id :title] title))
 (defn toggle [id] (swap! todos update-in [id :done] not))
 
+(defn clear-done [] (js/console.log "clear-done"))
+
 (defn add-todo [text]
   (let [id (swap! counter inc)]
     (swap! todos assoc id {:id id :title text :done false})))
@@ -34,6 +36,21 @@
 (def todo-edit (with-meta todo-input
                  {:component-didmount #(.focus (rdom/dom-node %))}))
 
+(defn todo-stats [{:keys [filt active done]}] 
+  (let [props-for (fn [name]
+                    {:class (if (= name @filt) "selected")
+                     :on-click #(reset! filt name)})]
+    [:div
+     [:span#todo-count
+      [:strong active] " " (case active 1 "item" "items") " left"]
+     [:ul#filters
+      [:li [:a (props-for :all) "All"]]
+      [:li [:a (props-for :active) "Active"]]
+      [:li [:a (props-for :done) "Completed"]]]
+     (when (pos? done)
+       [:button#clear-completed {:on-click clear-done}
+        "Clear completed " done])]))
+
 (defn todo-item []
   (let [editing (r/atom false)]
     (fn [{:keys [id done title]}]
@@ -49,8 +66,11 @@
                      :on-stop #(reset! editing false)}])])))
 
 (defn todolist [props]
-  (js/console.log "props" props)
-  (let [items (vals @todos)]
+  (let [filt (r/atom :all)]
+   (fn []
+    (let [items (vals @todos)
+          done (->> items (filter :done) count)
+          active (- (count items) done)]
     [:div
      [:section#todoapp
       [:header#header
@@ -62,6 +82,12 @@
         [:div
          [:section#main
           [:ul#todo-list
-           (for [todo items]
-             ^{:key (:id todo)} [todo-item todo])]]]
-        )]]))
+           (for [todo (filter (case @filt
+                                :active (complement :done)
+                                :done :done
+                                :all identity) items)]
+             ^{:key (:id todo)} [todo-item todo])]]
+         [:footer#footer
+          [todo-stats {:active active :done done :filt filt}]]])]
+     [:footer#info
+      [:p "Double-click to edit a todo"]]]))))
