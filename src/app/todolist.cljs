@@ -4,12 +4,11 @@
             [clojure.string :as str]))
 
 (defonce todos (r/atom (sorted-map)))
-
 (defonce counter (r/atom 0))
 
 (defn delete [id] (swap! todos dissoc id))
-
 (defn save [id title] (swap! todos assoc-in [id :title] title))
+(defn toggle [id] (swap! todos update-in [id :done] not))
 
 (defn add-todo [text]
   (let [id (swap! counter inc)]
@@ -41,6 +40,7 @@
       [:li {:class (str (if done "completed ")
                         (if @editing "editing"))}
        [:div.view
+        [:input.toggle {:type "checkbox" :checked done :on-change #(toggle id)}]
         [:label {:on-double-click #(reset! editing true)} title]
         [:button.destroy {:on-click #(delete id)}]]
        (when @editing
