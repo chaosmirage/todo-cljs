@@ -11,6 +11,7 @@
 (defn toggle [id] (swap! todos update-in [id :done] not))
 
 (defn mmap [m f a] (->> m (f a) (into (empty m))))
+(defn complete-all [v] (swap! todos mmap map #(assoc-in % [1 :done] v)))
 (defn clear-done [] (swap! todos mmap remove #(get-in % [1 :done])))
 
 (defn add-todo [text]
@@ -82,6 +83,9 @@
       (when (-> items count pos?)
         [:div
          [:section#main
+          [:input#toggle-all {:type "checkbox" 
+                              :checked (zero? active)
+                              :on-change #(complete-all (pos? active))}]
           [:ul#todo-list
            (for [todo (filter (case @filt
                                 :active (complement :done)
