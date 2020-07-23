@@ -10,7 +10,8 @@
 (defn save [id title] (swap! todos assoc-in [id :title] title))
 (defn toggle [id] (swap! todos update-in [id :done] not))
 
-(defn clear-done [] (js/console.log "clear-done"))
+(defn mmap [m f a] (->> m (f a) (into (empty m))))
+(defn clear-done [] (swap! todos mmap remove #(get-in % [1 :done])))
 
 (defn add-todo [text]
   (let [id (swap! counter inc)]
