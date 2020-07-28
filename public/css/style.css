@@ -5,6 +5,12 @@ body {
 	padding: 0;
 }
 
+#search-input {
+	position: absolute;
+  top: -25px;
+  right: 0;
+}
+
 button {
 	margin: 0;
 	padding: 0;
@@ -74,7 +80,7 @@ input[type="checkbox"] {
 
 #todoapp h1 {
 	position: absolute;
-	top: -120px;
+	top: -135px;
 	width: 100%;
 	font-size: 70px;
 	font-weight: bold;

@@ -5,13 +5,21 @@
 
 (defonce todos (r/atom (sorted-map)))
 (defonce counter (r/atom 0))
+(defonce todos-filter-value (r/atom ""))
 
 (defn delete [id] (swap! todos dissoc id))
+
 (defn save [id title] (swap! todos assoc-in [id :title] title))
+
 (defn toggle [id] (swap! todos update-in [id :done] not))
 
+(defn handle-change-todos-filter [e]
+  (reset! todos-filter-value (-> e .-target .-value)))
+
 (defn mmap [m f a] (->> m (f a) (into (empty m))))
+
 (defn complete-all [v] (swap! todos mmap map #(assoc-in % [1 :done] v)))
+
 (defn clear-done [] (swap! todos mmap remove #(get-in % [1 :done])))
 
 (defn add-todo [text]
@@ -36,7 +44,7 @@
                                nil)}])))
 
 (def todo-edit (with-meta todo-input
-                 {:component-didmount #(.focus (rdom/dom-node %))}))
+                 {:component-did-mount #(.focus (rdom/dom-node %))}))
 
 (defn todo-stats [{:keys [filt active done]}] 
   (let [props-for (fn [name]
@@ -67,20 +75,30 @@
                      :on-save #(save id %)
                      :on-stop #(reset! editing false)}])])))
 
-(defn todolist [props]
+(defn todolist []
   (let [filt (r/atom :all)]
    (fn []
     (let [items (vals @todos)
-          done (->> items (filter :done) count)
-          active (- (count items) done)]
+          filtered-items (filter
+                          #(str/includes?
+                            (str/lower-case (:title %))
+                            (-> @todos-filter-value str/lower-case str/trim))
+                          items)
+          done (->> filtered-items (filter :done) count)
+          active (- (count filtered-items) done)]
     [:div
      [:section#todoapp
+      [:input {:id "search-input"
+               :placeholder "Enter item name"
+               :on-change handle-change-todos-filter
+               :value @todos-filter-value
+               :disabled (-> items count pos? not)}]
       [:header#header
        [:h1 "todos"]
        [todo-input {:id "new-todo"
                     :placeholder "What needs to be done?"
                     :on-save add-todo}]]
-      (when (-> items count pos?)
+      (when (-> filtered-items count pos?)
         [:div
          [:section#main
           [:input#toggle-all {:type "checkbox" 
@@ -90,7 +108,7 @@
            (for [todo (filter (case @filt
                                 :active (complement :done)
                                 :done :done
-                                :all identity) items)]
+                                :all identity) filtered-items)]
              ^{:key (:id todo)} [todo-item todo])]]
          [:footer#footer
           [todo-stats {:active active :done done :filt filt}]]])]
